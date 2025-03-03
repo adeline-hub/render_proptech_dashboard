@@ -1,53 +1,76 @@
-import dash_mantine_components as dmc
-from dash import Dash, html, dcc, Input, Output
-from dash_iconify import DashIconify
-import pandas as pd
+import dash
+from dash import dcc, html
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output
 import plotly.express as px
+import pandas as pd
 
-app = Dash(__name__)
+# Initialize Dash app with pages
+app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 
-# Sample DataFrame
-df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    "Amount": [4, 1, 2, 2, 4, 5],
-    "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-})
-
-markdown_text = '''
-### Dash and Markdown
-Each work should be ...
-'''
-
-# App Layout
-app.layout = html.Div(children=[
-    html.H1(children='Hello Citrus Fan'),
-
-    html.Div(children='''Dash: A web application framework for your data.'''),
-
-    dcc.Markdown(markdown_text),  # Display Markdown
-
-    dcc.Dropdown(
-        id='city-dropdown',
-        options=[{'label': city, 'value': city} for city in df["City"].unique()],
-        value=df["City"].unique().tolist(),  # Default to selecting all cities
-        multi=True  # Allow multiple selections
+# Define the navigation layout
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    dbc.NavbarSimple(
+        children=[
+            dbc.NavItem(dbc.NavLink("Home", href="/")),
+            dbc.NavItem(dbc.NavLink("Investors & Distribution", href="/page-2")),
+            dbc.NavItem(dbc.NavLink("Acquisitions & SWOT", href="/page-3")),
+        ],
+        brand="PropTech Market Study",
+        brand_href="/",
+        color="primary",
+        dark=True,
     ),
-
-    dcc.Graph(id='example-graph')
+    html.Div(id='page-content')
 ])
 
-# Callback to Update the Chart Based on Dropdown Selection
-@app.callback(
-    Output('example-graph', 'figure'),
-    Input('city-dropdown', 'value')
-)
-def update_graph(selected_cities):
-    filtered_df = df[df["City"].isin(selected_cities)]  # Filter based on selection
-    fig = px.bar(filtered_df, x="Fruit", y="Amount", color="City", barmode="group")
-    return fig
+# Page 1: Overview of PropTech Technologies
+def page_1_layout():
+    return html.Div([
+        html.H1("PropTech Technologies Overview"),
+        html.P("Introduction to PropTech technologies and their impact."),
+        dbc.Row([
+            dbc.Col(
+                dbc.Accordion([
+                    dbc.AccordionItem("Definition of Technology A", title="Technology A"),
+                    dbc.AccordionItem("Definition of Technology B", title="Technology B"),
+                    dbc.AccordionItem("Definition of Technology C", title="Technology C"),
+                ], start_collapsed=True), width=4
+            ),
+            dbc.Col(
+                dcc.Graph(id='tech-frequency-boxplot'), width=8
+            )
+        ])
+    ])
 
-# Run the App
-if __name__ == "__main__":
+# Page 2: Investors in Tech & PropTech Distribution in France
+def page_2_layout():
+    return html.Div([
+        html.H1("Investors in Tech & PropTech Distribution in France"),
+        dcc.Graph(id='investors-tech-display'),
+        dcc.Graph(id='proptech-map')
+    ])
+
+# Page 3: Potential Acquisitions & SWOT Analysis
+def page_3_layout():
+    return html.Div([
+        html.H1("Potential Acquisitions & SWOT Analysis"),
+        dcc.Graph(id='top-companies-display'),
+        html.Div(id='swot-analysis')
+    ])
+
+# Callback to update page content
+@app.callback(Output('page-content', 'children'), [Input('url', 'pathname')])
+def display_page(pathname):
+    if pathname == '/page-2':
+        return page_2_layout()
+    elif pathname == '/page-3':
+        return page_3_layout()
+    return page_1_layout()
+
+if __name__ == '__main__':
     app.run_server(debug=True)
 
 server = app.server
